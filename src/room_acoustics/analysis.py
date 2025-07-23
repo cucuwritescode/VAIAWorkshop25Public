@@ -38,6 +38,7 @@ def schroeder_backward_int(
     out = np.flip(x, axis=-1)
     # Subtract noise power from the squared signal if requested 
     if subtract_noise:
+        print(noise_level)
         out_sqrd = out ** 2 - noise_level ** 2
     else:
         out_sqrd = out ** 2
@@ -51,7 +52,7 @@ def schroeder_backward_int(
         norm_vals = np.max(out, keepdims=True, axis=-1)  # per channel
     else:
         norm_vals = np.ones_like(out)
-
+    print("i am backwards!!")
     return out / norm_vals, norm_vals
 
 
@@ -107,7 +108,8 @@ def compute_edc(
     out = schroeder_backward_int(out, energy_norm, subtract_noise, noise_level)[0]
     # Convert to dB scale
     out = 10 * np.log10(out)
-
+    print("test")
+    print("i am here!!")
     return out
 
 
@@ -115,7 +117,7 @@ def estimate_rt60(
         edc_db: NDArray, 
         time: NDArray, 
         decay_start_db: float = -5, 
-        decay_end_db:float = -65
+        decay_end_db:float = -25
     ) -> tuple[float, float, float, NDArray]:
     """
     Estimate the reverberation time (RT60) from an Energy Decay Curve (EDC) using linear regression.
