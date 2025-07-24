@@ -57,6 +57,7 @@ class FeedbackDelayNetwork:
 
         if feedback_matrix_type == 'identity':
             ## WRITE YOUR CODE HERE ##
+            Q = np.eye(self.N) #create an identity matrix of size NxN (self.N is the number of delay lines)
             pass 
         elif feedback_matrix_type == 'random':
             # this is one way to generate a random orthogonal matrix based on QR decomposition
@@ -65,9 +66,23 @@ class FeedbackDelayNetwork:
             Q = np.matmul(Q, np.diag(np.sign(np.diag(R)))) 
         elif feedback_matrix_type == 'hadamard':
             ## WRITE YOUR CODE HERE ##
+            #hadamard requires n to be a power of 2
+            from scipy.linalg import hadamard
+            if not (self.N & (self.N - 1)) == 0:
+                raise ValueError("Hadamard matrix requires N to be a power of 2.")
+            Q = hadamard(self.N) #generate the hadamard matrix of size NxN
+            #now normalise it to keep it energy controlled
+            Q = Q / np.sqrt(self.N)  # normalise hadamard matrix
             pass 
         elif feedback_matrix_type == 'householder':
             ## WRITE YOUR CODE HERE ##
+            #generate a random vector and create a householder reflection matrix
+            v = np.random.randn(self.N)
+            # normalise the vector
+            v /= np.linalg.norm(v)
+            v = np.random.randn(self.N, 1)  #use shape (N, 1) 
+            #householder matrix formula: q = i - 2 * v * vᵗ
+            Q = np.eye(self.N) - 2 * (v @ v.T)
             pass 
         elif feedback_matrix_type == 'circulant':
             v = np.random.randn(self.N)
@@ -115,17 +130,32 @@ class FeedbackDelayNetwork:
         # process each sample individually
         for sample in input_signal:
             ### WRITE YOUR CODE HERE ###
-            pass
+        
             # read output from the delay lines
-            # compute the new input ´delay_input´ to the delay lines 
-
+            delay_output = np.zeros(self.N)  #initialise the input to the delay lines
+            
             for i in range(self.N):
-                pass
-                # store ´delay_input´ in the delay buffers
+                # read the current sample from the delay buffer
+                    delay_output[i] = self.delay_buffers[i][self.write_indices[i]]
+                    
+            delay_output= np.array(delay_output)  # convert to numpy array for matrix operations
+            #print(f"Delay input: {delay_output}")  # Debugging output
+            # compute the new input ´delay_output´ to the delay lines 
+            #combines direct input + feedback through feedback matrix
+            delay_input = sample * self.input_gains + self.feedback_matrix @ delay_output
+            #print(f"New input: {delay_input}")  # Debugging output
+            for i in range(self.N):
+                #print(delay_input[0, i])  # Debugging output
+                self.delay_buffers[i][self.write_indices[i]] = delay_input[0, i]
+                self.write_indices[i] = (self.write_indices[i] + 1) % self.delay_lengths[i]
+            
+                # store ´delay_output´ in the delay buffers
                 # update the write index for each delay line
                 
             # compute the output sample by multiplying the feedback input with the output gains
+            output_sample = float(self.output_gains.T @ delay_output)
             # you can the "append" method to store the output samples
+            output_signal.append(output_sample)
 
         self.output = np.array(output_signal)
         return self.output
